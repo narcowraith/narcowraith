@@ -4,5 +4,6 @@
 <hr>
 <h1>About me</h1>
 <h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3>
+<code>Tokyo, Japan</code>
 <hr>
 <a href="https://discord.gg/cartel"><img src="https://i.ibb.co/235NnH3p/correctbanner.webp"/></a>
