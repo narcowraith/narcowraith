@@ -4,7 +4,7 @@
 <hr>
 <h1>My Lore</h1>
 <h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3>
-◦ 10+ yrs INSCOM
+◦ 10+ yrs ISR
 <br>
 ◦ SWE
 <br>
