@@ -5,9 +5,9 @@
 <h1>My Lore</h1>
 <h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3>
 <code>Tokyo, Japan</code>
-
+<br>
 <img src="https://i.ibb.co/LzdwwLmq/SLQ6-IZAMLLXD.png">
-<code><b>WraithAI</b> is an advanced AI-powered Discord bot designed for intelligent server moderation and enforcement. It leverages natural language processing to analyze user behavior, detect keyword patterns, and assess risks in real time. By understanding server rules and guidelines, WraithAI enables proactive moderation through pattern recognition and informed, risk-based decision-making—streamlining community management with precision and efficiency.</code>
+<b>WraithAI</b> is an advanced AI-powered Discord bot designed for intelligent server moderation and enforcement. It leverages natural language processing to analyze user behavior, detect keyword patterns, and assess risks in real time. By understanding server rules and guidelines, WraithAI enables proactive moderation through pattern recognition and informed, risk-based decision-making—streamlining community management with precision and efficiency.
 
 
 <hr>
