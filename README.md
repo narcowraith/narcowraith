@@ -3,7 +3,7 @@
 </p>
 <hr>
 <h1>My Lore</h1>
-<h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3><br>
+<h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3>
 <br>
 ◦ 10+ yrs INSCOM
 <br>
