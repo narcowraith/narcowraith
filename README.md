@@ -9,7 +9,7 @@
 <br>
 <hr>
 <p align="center">
-<img src="https://i.ibb.co/LzdwwLmq/SLQ6-IZAMLLXD.png">
+<a style="text-decoration: none;" href="https://joincartel.org/"><img src="https://i.ibb.co/LzdwwLmq/SLQ6-IZAMLLXD.png"></a>
 — <b>WraithAI</b> is an advanced AI-powered Discord bot designed for intelligent server moderation and enforcement. It leverages natural language processing to analyze user behavior, detect keyword patterns, and assess risks in real time. By understanding server rules and guidelines, WraithAI enables proactive moderation through pattern recognition and informed, risk-based decision-making—streamlining community management with precision and efficiency.
 </p>
 
