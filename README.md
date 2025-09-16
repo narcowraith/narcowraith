@@ -8,7 +8,7 @@
 <br>
 ◦ SWE
 <br>
-<code>Tokyo, Japan</code>
+<code>🇯🇵 Tokyo, Japan</code>
 <br>
 <br>
 <hr>
