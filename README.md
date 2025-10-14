@@ -2,7 +2,7 @@
     <a href="https://uwu.gal"><img src="https://raw.githubusercontent.com/ijsbol/ijsbol/refs/heads/output/github-contribution-grid-snake-dark.svg"></a>
 </p>
 <hr>
-<h1>My Lore</h1>
+<h1>.GG/CARTEL</h1>
 <h3><b><a style="text-decoration: none;" href="https://t.me/narcowraith">ɴᴀʀᴄᴏᴡʀᴀɪᴛʜ</a></b></h3>
 ◦ 10+ yrs ISR
 <br>
