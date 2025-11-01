@@ -18,4 +18,4 @@
 </p>
 
 <hr>
-<a href="https://discord.gg/cartel"><img src="https://i.ibb.co/235NnH3p/correctbanner.webp"/></a>
+<a href="https://discord.gg/cartel"><img src="https://i.ibb.co/DfvVrCgr/cartel-logo.jpg"/></a>
