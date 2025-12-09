@@ -173,6 +173,25 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: "Authentication required" });
   }
 
+  // CRITICAL: Verify user is still on Mullvad VPN
+  const clientIp = getClientIp(req);
+  if (!isMullvadVPN(clientIp)) {
+    await storage.createLog({
+      userId: req.session.userId,
+      action: "SESSION_TERMINATED_NON_VPN",
+      details: `Session terminated - not connected to Mullvad VPN`,
+      ipAddress: clientIp,
+      userAgent: req.get("user-agent"),
+      type: "warning",
+    });
+
+    req.session.destroy((err) => {
+      if (err) console.error("Session destruction error:", err);
+    });
+    res.clearCookie("__cartel_sid");
+    return res.status(401).json({ error: "VPN connection required" });
+  }
+
   // Verify user still exists in database
   const user = await storage.getUser(req.session.userId);
   if (!user || user.username !== req.session.username) {
@@ -180,7 +199,7 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
       userId: req.session.userId,
       action: "INVALID_SESSION_DETECTED",
       details: "Session user mismatch or deleted user",
-      ipAddress: getClientIp(req),
+      ipAddress: clientIp,
       userAgent: req.get("user-agent"),
       type: "error",
     });
@@ -248,7 +267,7 @@ export async function registerRoutes(
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "1; mode=block");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=(), screen-wake-lock=()");
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
