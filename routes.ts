@@ -389,18 +389,19 @@ export async function registerRoutes(
           type: "warning",
         });
 
-        // Destroy the session
+        // Destroy the session and wait for completion
         const sessionId = req.sessionID;
-        req.session.destroy((err) => {
-          if (err) console.error("Session destroy error:", err);
-          console.log(`[Session Check] Session ${sessionId} destroyed due to VPN violation`);
-        });
-        res.clearCookie("__cartel_sid");
-
-        return res.json({ 
-          authenticated: false,
-          csrfToken: undefined,
-          message: "VPN required. Please connect to Mullvad VPN."
+        return new Promise<void>((resolve) => {
+          req.session.destroy((err) => {
+            if (err) console.error("Session destroy error:", err);
+            console.log(`[Session Check] Session ${sessionId} destroyed due to VPN violation`);
+            res.clearCookie("__cartel_sid");
+            res.json({ 
+              authenticated: false,
+              message: "VPN required. Please connect to Mullvad VPN."
+            });
+            resolve();
+          });
         });
       }
 
