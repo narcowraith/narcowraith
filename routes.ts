@@ -108,6 +108,11 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 function isMullvadVPN(ip: string): boolean {
+  console.log(`[Mullvad] === VPN Check Start ===`);
+  console.log(`[Mullvad] IP to check: "${ip}"`);
+  console.log(`[Mullvad] IP list loaded: ${mullvadIPsLoaded}`);
+  console.log(`[Mullvad] CIDR count: ${mullvadCIDRs.size}`);
+  
   // CRITICAL: Fail closed - deny access if IP list is not loaded
   if (!mullvadIPsLoaded || mullvadCIDRs.size === 0) {
     console.error(`[Mullvad] IP list not loaded - BLOCKING access for IP: ${ip}`);
@@ -117,7 +122,12 @@ function isMullvadVPN(ip: string): boolean {
   // Check if IP's /24 range is in our Mullvad CIDR list
   const ipCIDR = ipToCIDR24(ip);
   const isMullvad = mullvadCIDRs.has(ipCIDR);
-  console.log(`[Mullvad] Checking IP ${ip} (${ipCIDR}): ${isMullvad ? 'ALLOWED (Mullvad)' : 'BLOCKED (not Mullvad)'}`);
+  
+  console.log(`[Mullvad] IP CIDR: "${ipCIDR}"`);
+  console.log(`[Mullvad] First 5 Mullvad CIDRs in list: ${Array.from(mullvadCIDRs).slice(0, 5).join(', ')}`);
+  console.log(`[Mullvad] Result: ${isMullvad ? 'ALLOWED (Mullvad VPN)' : 'BLOCKED (NOT Mullvad VPN)'}`);
+  console.log(`[Mullvad] === VPN Check End ===`);
+  
   return isMullvad;
 }
 
@@ -154,9 +164,16 @@ function getClientIp(req: Request): string {
   const forwardedFor = req.headers["x-forwarded-for"];
   if (forwardedFor) {
     const ips = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor).split(",");
-    return ips[0].trim();
+    const clientIp = ips[0].trim();
+    console.log(`[IP] X-Forwarded-For: ${forwardedFor}, Extracted: ${clientIp}`);
+    return clientIp;
   }
-  return req.socket.remoteAddress || req.ip || "unknown";
+  const socketIp = req.socket.remoteAddress || req.ip || "unknown";
+  
+  // Strip IPv6 prefix if present (::ffff:xxx.xxx.xxx.xxx)
+  const cleanIp = socketIp.replace(/^::ffff:/, '');
+  console.log(`[IP] Socket IP: ${socketIp}, Clean: ${cleanIp}`);
+  return cleanIp;
 }
 
 function generateCsrfToken(): string {
