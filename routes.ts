@@ -108,10 +108,10 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 function isMullvadVPN(ip: string): boolean {
-  // If we couldn't load the IP list, fail open (allow registration)
+  // CRITICAL: Fail closed - deny access if IP list is not loaded
   if (!mullvadIPsLoaded || mullvadCIDRs.size === 0) {
-    console.warn(`[Mullvad] IP list not loaded, allowing registration for IP: ${ip}`);
-    return true;
+    console.error(`[Mullvad] IP list not loaded - BLOCKING access for IP: ${ip}`);
+    return false;
   }
 
   // Check if IP's /24 range is in our Mullvad CIDR list
