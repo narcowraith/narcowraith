@@ -373,12 +373,12 @@ export async function registerRoutes(
   // Session check endpoint - VPN required for authenticated sessions
   app.get("/api/auth/session", async (req, res) => {
     if (req.session.userId) {
-      const clientIP = getClientIp(req);
-      console.log(`[Session Check] User ${req.session.userId} from IP: ${clientIP}`);
+      const clientIp = getClientIp(req);
+      console.log(`[Session Check] User ${req.session.userId} from IP: ${clientIp}`);
 
       // Check VPN requirement for authenticated sessions
       if (!isMullvadVPN(clientIp)) {
-        console.log(`[Session Check] BLOCKING - IP ${clientIP} is not a VPN IP`);
+        console.log(`[Session Check] BLOCKING - IP ${clientIp} is not a VPN IP`);
 
         await storage.createLog({
           userId: req.session.userId,
@@ -399,7 +399,7 @@ export async function registerRoutes(
 
         return res.json({ 
           authenticated: false,
-          csrfToken: req.session.csrfToken,
+          csrfToken: undefined,
           message: "VPN required. Please connect to Mullvad VPN."
         });
       }
