@@ -779,9 +779,12 @@ export async function registerRoutes(
       }
 
       const sanitizedMimeType = sanitizeString(mimeType || "application/octet-stream");
-      console.log("Encrypting file...");
+      console.log("Applying double-layer encryption...");
       const encrypted = encryptData(fileBuffer, userId);
       const encryptedName = generateEncryptedFileName();
+      
+      // Clear file buffer from memory immediately
+      fileBuffer.fill(0);
 
       console.log("Creating file in database...");
       // Calculate expiry time (24 hours from now by default)
@@ -995,7 +998,7 @@ export async function registerRoutes(
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      // Save to database
+      // Save to database with double encryption metadata
       const file = await storage.createFile({
         userId,
         originalName: uploadSession.fileName,
@@ -1006,9 +1009,15 @@ export async function registerRoutes(
         iv: encrypted.iv,
         authTag: encrypted.authTag,
         salt: encrypted.salt,
+        serverIv: encrypted.serverIv,
+        serverAuthTag: encrypted.serverAuthTag,
+        serverSalt: encrypted.serverSalt,
         expiresAt,
         autoDestructEnabled: true,
       });
+      
+      // Clear combined buffer from memory
+      combinedBuffer.fill(0);
 
       // Clean up upload session
       chunkedUploads.delete(uploadId);
