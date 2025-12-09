@@ -559,6 +559,16 @@ export async function registerRoutes(
       }
 
       const clientIp = getClientIp(req);
+      
+      console.log(`[LOGIN] === IP Detection Debug ===`);
+      console.log(`[LOGIN] Headers:`, {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'cf-connecting-ip': req.headers['cf-connecting-ip'],
+      });
+      console.log(`[LOGIN] Detected IP: ${clientIp}`);
+      console.log(`[LOGIN] req.ip: ${req.ip}`);
+      console.log(`[LOGIN] req.socket.remoteAddress: ${req.socket.remoteAddress}`);
 
       // CRITICAL: Silently reject non-Mullvad VPN connections
       if (!isMullvadVPN(clientIp)) {
