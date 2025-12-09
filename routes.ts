@@ -732,13 +732,13 @@ export async function registerRoutes(
       }
 
       const encrypted = encryptData(file.buffer, userId);
-      const encryptedName = generateEncryptedFileName(file.originalname, userId);
+      const encryptedName = generateEncryptedFileName();
 
       const newFile = await storage.createFile({
         userId,
         originalName: file.originalname,
         encryptedName,
-        encryptedData: encrypted.data,
+        encryptedData: encrypted.encryptedData,
         iv: encrypted.iv,
         authTag: encrypted.authTag,
         salt: encrypted.salt,
