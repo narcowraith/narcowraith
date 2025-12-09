@@ -112,7 +112,7 @@ function isMullvadVPN(ip: string): boolean {
   console.log(`[Mullvad] IP to check: "${ip}"`);
   console.log(`[Mullvad] IP list loaded: ${mullvadIPsLoaded}`);
   console.log(`[Mullvad] CIDR count: ${mullvadCIDRs.size}`);
-  
+
   // CRITICAL: Fail closed - deny access if IP list is not loaded
   if (!mullvadIPsLoaded || mullvadCIDRs.size === 0) {
     console.error(`[Mullvad] IP list not loaded - BLOCKING access for IP: ${ip}`);
@@ -122,12 +122,12 @@ function isMullvadVPN(ip: string): boolean {
   // Check if IP's /24 range is in our Mullvad CIDR list
   const ipCIDR = ipToCIDR24(ip);
   const isMullvad = mullvadCIDRs.has(ipCIDR);
-  
+
   console.log(`[Mullvad] IP CIDR: "${ipCIDR}"`);
   console.log(`[Mullvad] First 5 Mullvad CIDRs in list: ${Array.from(mullvadCIDRs).slice(0, 5).join(', ')}`);
   console.log(`[Mullvad] Result: ${isMullvad ? 'ALLOWED (Mullvad VPN)' : 'BLOCKED (NOT Mullvad VPN)'}`);
   console.log(`[Mullvad] === VPN Check End ===`);
-  
+
   return isMullvad;
 }
 
@@ -169,7 +169,7 @@ function getClientIp(req: Request): string {
     'true-client-ip',
     'x-client-ip',
   ];
-  
+
   for (const header of headers) {
     const value = req.headers[header];
     if (value) {
@@ -181,7 +181,7 @@ function getClientIp(req: Request): string {
       }
     }
   }
-  
+
   // Fallback to req.ip (uses Express trust proxy) or socket
   const expressIp = req.ip;
   if (expressIp && expressIp !== '127.0.0.1' && expressIp !== '::1') {
@@ -189,7 +189,7 @@ function getClientIp(req: Request): string {
     console.log(`[IP] Express req.ip: ${cleanIp}`);
     return cleanIp;
   }
-  
+
   const socketIp = req.socket.remoteAddress || "unknown";
   const cleanIp = socketIp.replace(/^::ffff:/, '');
   console.log(`[IP] Socket fallback: ${cleanIp}`);
@@ -370,8 +370,41 @@ export async function registerRoutes(
     next();
   });
 
-  app.get("/api/auth/session", (req, res) => {
+  // Session check endpoint - VPN required for authenticated sessions
+  app.get("/api/auth/session", async (req, res) => {
     if (req.session.userId) {
+      const clientIP = getClientIp(req);
+      console.log(`[Session Check] User ${req.session.userId} from IP: ${clientIP}`);
+
+      // Check VPN requirement for authenticated sessions
+      if (!isMullvadVPN(clientIp)) {
+        console.log(`[Session Check] BLOCKING - IP ${clientIP} is not a VPN IP`);
+
+        await storage.createLog({
+          userId: req.session.userId,
+          action: "SESSION_TERMINATED_NON_VPN",
+          details: `Session terminated - not connected to Mullvad VPN`,
+          ipAddress: clientIp,
+          userAgent: req.get("user-agent"),
+          type: "warning",
+        });
+
+        // Destroy the session
+        const sessionId = req.sessionID;
+        req.session.destroy((err) => {
+          if (err) console.error("Session destroy error:", err);
+          console.log(`[Session Check] Session ${sessionId} destroyed due to VPN violation`);
+        });
+        res.clearCookie("__cartel_sid");
+
+        return res.json({ 
+          authenticated: false,
+          csrfToken: req.session.csrfToken,
+          message: "VPN required. Please connect to Mullvad VPN."
+        });
+      }
+
+      console.log(`[Session Check] ALLOWED - User ${req.session.userId} has valid VPN`);
       res.json({ 
         authenticated: true, 
         username: req.session.username,
@@ -559,7 +592,7 @@ export async function registerRoutes(
       }
 
       const clientIp = getClientIp(req);
-      
+
       console.log(`[LOGIN] === IP Detection Debug ===`);
       console.log(`[LOGIN] Headers:`, {
         'x-forwarded-for': req.headers['x-forwarded-for'],
@@ -885,7 +918,7 @@ export async function registerRoutes(
       console.log("Applying double-layer encryption...");
       const encrypted = encryptData(fileBuffer, userId);
       const encryptedName = generateEncryptedFileName();
-      
+
       // Clear file buffer from memory immediately
       fileBuffer.fill(0);
 
@@ -1118,7 +1151,7 @@ export async function registerRoutes(
         expiresAt,
         autoDestructEnabled: true,
       });
-      
+
       // Clear combined buffer from memory
       combinedBuffer.fill(0);
 
