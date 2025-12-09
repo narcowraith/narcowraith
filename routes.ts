@@ -161,18 +161,38 @@ function isValidFilename(filename: string): boolean {
 }
 
 function getClientIp(req: Request): string {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  if (forwardedFor) {
-    const ips = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor).split(",");
-    const clientIp = ips[0].trim();
-    console.log(`[IP] X-Forwarded-For: ${forwardedFor}, Extracted: ${clientIp}`);
-    return clientIp;
-  }
-  const socketIp = req.socket.remoteAddress || req.ip || "unknown";
+  // Try multiple headers in order of preference
+  const headers = [
+    'x-forwarded-for',
+    'x-real-ip', 
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-client-ip',
+  ];
   
-  // Strip IPv6 prefix if present (::ffff:xxx.xxx.xxx.xxx)
+  for (const header of headers) {
+    const value = req.headers[header];
+    if (value) {
+      const ip = (Array.isArray(value) ? value[0] : value).split(',')[0].trim();
+      if (ip && ip !== 'unknown') {
+        const cleanIp = ip.replace(/^::ffff:/, '');
+        console.log(`[IP] Found in ${header}: ${cleanIp}`);
+        return cleanIp;
+      }
+    }
+  }
+  
+  // Fallback to req.ip (uses Express trust proxy) or socket
+  const expressIp = req.ip;
+  if (expressIp && expressIp !== '127.0.0.1' && expressIp !== '::1') {
+    const cleanIp = expressIp.replace(/^::ffff:/, '');
+    console.log(`[IP] Express req.ip: ${cleanIp}`);
+    return cleanIp;
+  }
+  
+  const socketIp = req.socket.remoteAddress || "unknown";
   const cleanIp = socketIp.replace(/^::ffff:/, '');
-  console.log(`[IP] Socket IP: ${socketIp}, Clean: ${cleanIp}`);
+  console.log(`[IP] Socket fallback: ${cleanIp}`);
   return cleanIp;
 }
 
@@ -538,6 +558,23 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid username format" });
       }
 
+      const clientIp = getClientIp(req);
+
+      // CRITICAL: Silently reject non-Mullvad VPN connections
+      if (!isMullvadVPN(clientIp)) {
+        await storage.createLog({
+          action: "LOGIN_BLOCKED_NON_VPN",
+          details: `Login blocked from non-Mullvad IP: ${clientIp}`,
+          ipAddress: clientIp,
+          userAgent: req.get("user-agent"),
+          type: "warning",
+        });
+
+        // Return generic error without revealing VPN requirement
+        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+        return res.status(500).json({ error: "Authentication service temporarily unavailable" });
+      }
+
       const user = await storage.getUserByUsername(sanitizedUsername);
       if (!user) {
         await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
@@ -579,6 +616,26 @@ export async function registerRoutes(
 
       if (!pendingLogin || !challenge) {
         return res.status(400).json({ error: "No authentication in progress" });
+      }
+
+      const clientIp = getClientIp(req);
+
+      // CRITICAL: Verify VPN before completing authentication
+      if (!isMullvadVPN(clientIp)) {
+        await storage.createLog({
+          userId: pendingLogin.userId,
+          action: "LOGIN_VERIFY_BLOCKED_NON_VPN",
+          details: `Login verification blocked from non-Mullvad IP: ${clientIp}`,
+          ipAddress: clientIp,
+          userAgent: req.get("user-agent"),
+          type: "warning",
+        });
+
+        req.session.destroy((err) => {
+          if (err) console.error("Session destruction error:", err);
+        });
+        res.clearCookie("__cartel_sid");
+        return res.status(500).json({ error: "Authentication service temporarily unavailable" });
       }
 
       const { userId, username } = pendingLogin;
