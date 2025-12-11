@@ -370,6 +370,43 @@ export async function registerRoutes(
     next();
   });
 
+  // Monero price endpoint (public, cached)
+  let cachedXmrPrice: { price: number; timestamp: number } | null = null;
+  const XMR_CACHE_DURATION = 60000; // 1 minute cache
+
+  app.get("/api/crypto/xmr-price", async (req, res) => {
+    try {
+      // Return cached price if still valid
+      if (cachedXmrPrice && Date.now() - cachedXmrPrice.timestamp < XMR_CACHE_DURATION) {
+        return res.json({ usd: cachedXmrPrice.price });
+      }
+
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd', {
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinGecko API error: ${response.status}`);
+      }
+
+      const data = await response.json() as { monero?: { usd?: number } };
+      
+      if (data.monero?.usd) {
+        cachedXmrPrice = { price: data.monero.usd, timestamp: Date.now() };
+        return res.json({ usd: data.monero.usd });
+      }
+
+      throw new Error('Invalid response from CoinGecko');
+    } catch (error: any) {
+      console.error('[XMR Price] Error:', error.message);
+      // Return cached price if available, even if expired
+      if (cachedXmrPrice) {
+        return res.json({ usd: cachedXmrPrice.price, cached: true });
+      }
+      return res.status(500).json({ error: 'Failed to fetch XMR price' });
+    }
+  });
+
   // Session check endpoint - VPN required for authenticated sessions
   app.get("/api/auth/session", async (req, res) => {
     // CRITICAL: Prevent caching - session state must always be fresh
