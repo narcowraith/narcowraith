@@ -372,30 +372,47 @@ export async function registerRoutes(
 
   // Session check endpoint - VPN required for authenticated sessions
   app.get("/api/auth/session", async (req, res) => {
+    // CRITICAL: Prevent caching - session state must always be fresh
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    
     if (req.session.userId) {
       const clientIp = getClientIp(req);
-      console.log(`[Session Check] User ${req.session.userId} from IP: ${clientIp}`);
+      console.log(`[Session Check] === Authenticated Session Check ===`);
+      console.log(`[Session Check] User: ${req.session.userId}`);
+      console.log(`[Session Check] Detected IP: ${clientIp}`);
+      console.log(`[Session Check] Headers: x-forwarded-for=${req.headers['x-forwarded-for']}, x-real-ip=${req.headers['x-real-ip']}`);
 
       // Check VPN requirement for authenticated sessions
       if (!isMullvadVPN(clientIp)) {
         console.log(`[Session Check] BLOCKING - IP ${clientIp} is not a VPN IP`);
 
-        await storage.createLog({
-          userId: req.session.userId,
-          action: "SESSION_TERMINATED_NON_VPN",
-          details: `Session terminated - not connected to Mullvad VPN`,
-          ipAddress: clientIp,
-          userAgent: req.get("user-agent"),
-          type: "warning",
-        });
+        try {
+          await storage.createLog({
+            userId: req.session.userId,
+            action: "SESSION_TERMINATED_NON_VPN",
+            details: `Session terminated - not connected to Mullvad VPN`,
+            ipAddress: clientIp,
+            userAgent: req.get("user-agent"),
+            type: "warning",
+          });
+        } catch (logError) {
+          console.error("Failed to create log:", logError);
+        }
 
-        // Destroy the session synchronously and return immediately
+        // CRITICAL: Wait for session destruction before responding
         const sessionId = req.sessionID;
-        req.session.destroy((err) => {
-          if (err) console.error("Session destroy error:", err);
-          console.log(`[Session Check] Session ${sessionId} destroyed due to VPN violation`);
+        await new Promise<void>((resolve) => {
+          req.session.destroy((err) => {
+            if (err) console.error("Session destroy error:", err);
+            console.log(`[Session Check] Session ${sessionId} destroyed due to VPN violation`);
+            resolve();
+          });
         });
-        res.clearCookie("__cartel_sid");
+        
+        res.clearCookie("__cartel_sid", { path: "/" });
         return res.status(401).json({ 
           authenticated: false,
           error: "VPN connection required"
